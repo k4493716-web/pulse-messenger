@@ -3,7 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Pulse — современный мессенджер для общения">
+    <meta name="theme-color" content="#0f172a">
     <title>Pulse — Современный мессенджер</title>
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Icons -->
+    <link rel="icon" type="image/svg+xml" href="icon.svg">
+    <link rel="apple-touch-icon" href="icon.svg">
+
     <style>
         * {
             margin: 0;
@@ -1037,6 +1047,27 @@
                         <button class="file-upload-btn" onclick="document.getElementById('customBgUpload').click()">📁 Загрузить свой фон</button>
                     </div>
                 </div>
+
+                <!-- PWA Installation Section -->
+                <div class="settings-section">
+                    <h4>Приложение</h4>
+                    <button class="file-upload-btn" id="installAppBtn" style="border-style: solid; padding: 12px;">
+                        📱 Установить приложение на устройство
+                    </button>
+                    <div id="installInstructions" class="hidden" style="margin-top: 12px; padding: 12px; background: var(--bg-tertiary); border-radius: 8px; font-size: 13px; line-height: 1.6; color: var(--text-secondary);">
+                        <strong style="color: var(--text-primary);">На iPhone/iPad:</strong><br>
+                        1. Нажмите кнопку "Поделиться" (квадрат со стрелкой вверх)<br>
+                        2. Выберите "На экран Домой"<br>
+                        3. Нажмите "Добавить"
+                    </div>
+                </div>
+
+                <!-- Logout Section -->
+                <div class="settings-section" style="margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border);">
+                    <button class="btn" id="logoutBtn" style="background: var(--danger); width: 100%;">
+                        Выйти из аккаунта
+                    </button>
+                </div>
             </div>
             <div class="modal-footer">
                 <button class="btn-secondary" onclick="closeSettingsModal()">Отмена</button>
@@ -1094,6 +1125,7 @@
         let messagesSubscription = null;
         let mediaRecorder = null;
         let audioChunks = [];
+        let deferredPrompt = null;
 
         // ============================================
         // INITIALIZATION
@@ -2050,6 +2082,69 @@
                 }
             });
         }
+
+        // ============================================
+        // PWA INSTALLATION
+        // ============================================
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            console.log('PWA install prompt available');
+        });
+
+        document.getElementById('installAppBtn').addEventListener('click', async () => {
+            const instructionsDiv = document.getElementById('installInstructions');
+
+            if (deferredPrompt) {
+                // Android/Windows - показываем нативное окно
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                console.log(`User response to the install prompt: ${outcome}`);
+                deferredPrompt = null;
+            } else {
+                // iPhone/iPad или уже установлено - показываем инструкцию
+                instructionsDiv.classList.toggle('hidden');
+            }
+        });
+
+        window.addEventListener('appinstalled', () => {
+            console.log('PWA was installed');
+            deferredPrompt = null;
+        });
+
+        // Регистрация Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('SW registered:', registration);
+                    })
+                    .catch(error => {
+                        console.log('SW registration failed:', error);
+                    });
+            });
+        }
+
+        // ============================================
+        // LOGOUT
+        // ============================================
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            if (confirm('Вы уверены, что хотите выйти из аккаунта?')) {
+                await supabase.auth.signOut();
+                currentUser = null;
+                currentProfile = null;
+                currentChat = null;
+
+                if (messagesSubscription) {
+                    messagesSubscription.unsubscribe();
+                    messagesSubscription = null;
+                }
+
+                localStorage.clear();
+                closeSettingsModal();
+                showAuthScreen();
+            }
+        });
 
         // ============================================
         // START
