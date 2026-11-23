@@ -533,12 +533,16 @@
             padding: 20px;
         }
 
+        .profile-header {
+            position: relative;
+            margin-bottom: 60px;
+        }
+
         .profile-banner {
             height: 150px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             position: relative;
             border-radius: 12px;
-            margin-bottom: 60px;
             overflow: hidden;
         }
 
@@ -577,6 +581,7 @@
             border: 4px solid var(--bg-secondary);
             overflow: hidden;
             cursor: pointer;
+            z-index: 1;
         }
 
         .profile-avatar-large img {
@@ -954,9 +959,11 @@
                 <!-- Profile Section -->
                 <div class="settings-section">
                     <h4>Профиль</h4>
-                    <div class="profile-banner" id="profileBanner">
-                        <input type="file" id="bannerUpload" accept="image/*" style="display: none;">
-                        <button class="profile-banner-upload" onclick="document.getElementById('bannerUpload').click()">Изменить фон</button>
+                    <div class="profile-header">
+                        <div class="profile-banner" id="profileBanner">
+                            <input type="file" id="bannerUpload" accept="image/*" style="display: none;">
+                            <button class="profile-banner-upload" onclick="document.getElementById('bannerUpload').click()">Изменить фон</button>
+                        </div>
                         <div class="profile-avatar-large" id="profileAvatarLarge" onclick="document.getElementById('avatarUpload').click()">
                             <span id="profileInitial"></span>
                         </div>
@@ -1015,7 +1022,8 @@
                 <button class="modal-close" onclick="closeProfileModal()">&times;</button>
             </div>
             <div class="modal-body">
-                <div class="profile-banner" id="viewProfileBanner">
+                <div class="profile-header">
+                    <div class="profile-banner" id="viewProfileBanner"></div>
                     <div class="profile-avatar-large" id="viewProfileAvatar">
                         <span id="viewProfileInitial"></span>
                     </div>
@@ -1528,7 +1536,7 @@
             const banner = document.getElementById('profileBanner');
             if (profile.banner_url) {
                 banner.style.background = 'transparent';
-                banner.innerHTML = `<img src="${profile.banner_url}"><button class="profile-banner-upload" onclick="document.getElementById('bannerUpload').click()">Изменить фон</button>` + banner.querySelector('.profile-avatar-large').outerHTML;
+                banner.innerHTML = `<img src="${profile.banner_url}"><button class="profile-banner-upload" onclick="document.getElementById('bannerUpload').click()">Изменить фон</button>`;
             }
         }
 
@@ -1556,7 +1564,8 @@
             if (url) {
                 currentProfile.banner_url = url;
                 const banner = document.getElementById('profileBanner');
-                banner.innerHTML = `<img src="${url}"><button class="profile-banner-upload" onclick="document.getElementById('bannerUpload').click()">Изменить фон</button>` + document.getElementById('profileAvatarLarge').outerHTML;
+                banner.style.background = 'transparent';
+                banner.innerHTML = `<img src="${url}"><button class="profile-banner-upload" onclick="document.getElementById('bannerUpload').click()">Изменить фон</button>`;
             }
         });
 
@@ -1668,16 +1677,19 @@
             const initial = document.getElementById('viewProfileInitial');
 
             if (profile.banner_url) {
-                banner.innerHTML = `<img src="${profile.banner_url}">` + avatar.outerHTML;
+                banner.style.background = 'transparent';
+                banner.innerHTML = `<img src="${profile.banner_url}">`;
             } else {
                 banner.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                banner.innerHTML = '';
             }
 
             if (profile.avatar_url) {
+                avatar.style.background = 'transparent';
                 avatar.innerHTML = `<img src="${profile.avatar_url}">`;
             } else {
                 avatar.style.background = getColorForUser(profile.username);
-                initial.textContent = getInitials(profile.display_name || profile.username);
+                avatar.innerHTML = `<span id="viewProfileInitial">${getInitials(profile.display_name || profile.username)}</span>`;
             }
 
             document.getElementById('viewProfileName').textContent = profile.display_name || profile.username;
