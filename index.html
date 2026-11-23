@@ -605,10 +605,23 @@
             font-size: 15px;
             margin-bottom: 12px;
             cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: all 0.2s;
         }
 
         .profile-username:hover {
-            text-decoration: underline;
+            background: rgba(82, 136, 193, 0.1);
+            text-decoration: none;
+        }
+
+        .profile-username::after {
+            content: '📋';
+            font-size: 12px;
+            opacity: 0.6;
         }
 
         .profile-bio {
@@ -973,6 +986,24 @@
                     <div class="input-group">
                         <label>Отображаемое имя</label>
                         <input type="text" id="settingsDisplayName" maxlength="50">
+                    </div>
+
+                    <div class="input-group">
+                        <label>Имя пользователя</label>
+                        <div style="display: flex; align-items: center; gap: 8px; padding: 12px 16px; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; transition: all 0.2s; user-select: none;" id="usernameDisplay" onclick="copyUsername()" onmouseenter="this.style.background='var(--bg-hover)'; this.style.borderColor='var(--accent)'" onmouseleave="this.style.background='var(--bg-tertiary)'; this.style.borderColor='var(--border)'">
+                            <span style="color: var(--accent); font-weight: 600; font-size: 15px;" id="currentUsername">@username</span>
+                            <span style="color: var(--text-secondary); font-size: 12px; margin-left: auto;">📋 Нажмите для копирования</span>
+                        </div>
+                        <button type="button" class="file-upload-btn" style="margin-top: 8px;" onclick="toggleUsernameEdit()">✏️ Изменить @username</button>
+                        <div id="usernameEditForm" style="display: none; margin-top: 12px;">
+                            <input type="text" id="newUsernameInput" placeholder="@новый_username" maxlength="32" style="width: 100%; padding: 12px 16px; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 15px; margin-bottom: 8px;">
+                            <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">5-32 символа, только a-z, 0-9, _</div>
+                            <div id="usernameEditError" class="error-message hidden" style="margin-bottom: 8px;"></div>
+                            <div style="display: flex; gap: 8px;">
+                                <button type="button" class="btn-secondary" style="flex: 1;" onclick="cancelUsernameEdit()">Отмена</button>
+                                <button type="button" class="btn-primary" style="flex: 1;" onclick="saveNewUsername()">Сохранить</button>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="input-group">
@@ -1521,6 +1552,7 @@
             document.getElementById('settingsDisplayName').value = profile.display_name || '';
             document.getElementById('settingsBio').value = profile.bio || '';
             document.getElementById('bioCounter').textContent = (profile.bio || '').length;
+            document.getElementById('currentUsername').textContent = '@' + profile.username;
 
             const avatarLarge = document.getElementById('profileAvatarLarge');
             const initial = document.getElementById('profileInitial');
@@ -1693,9 +1725,19 @@
             }
 
             document.getElementById('viewProfileName').textContent = profile.display_name || profile.username;
-            document.getElementById('viewProfileUsername').textContent = '@' + profile.username;
-            document.getElementById('viewProfileUsername').onclick = () => {
+            const usernameElement = document.getElementById('viewProfileUsername');
+            usernameElement.textContent = '@' + profile.username;
+            usernameElement.style.cursor = 'pointer';
+            usernameElement.style.userSelect = 'none';
+            usernameElement.onclick = () => {
                 navigator.clipboard.writeText('@' + profile.username);
+                const originalText = usernameElement.textContent;
+                usernameElement.textContent = '✓ Скопировано!';
+                usernameElement.style.color = 'var(--success)';
+                setTimeout(() => {
+                    usernameElement.textContent = originalText;
+                    usernameElement.style.color = 'var(--accent)';
+                }, 1500);
             };
             document.getElementById('viewProfileBio').textContent = profile.bio || 'Нет описания';
 
@@ -1704,6 +1746,128 @@
 
         function closeProfileModal() {
             document.getElementById('profileModal').classList.remove('active');
+        }
+
+        // ============================================
+        // USERNAME MANAGEMENT
+        // ============================================
+        function copyUsername() {
+            const username = currentProfile.username;
+            navigator.clipboard.writeText('@' + username).then(() => {
+                const displayDiv = document.getElementById('usernameDisplay');
+                const originalHtml = displayDiv.innerHTML;
+                displayDiv.innerHTML = '<span style="color: var(--success); font-weight: 600;">✓ Скопировано!</span>';
+                setTimeout(() => {
+                    displayDiv.innerHTML = originalHtml;
+                }, 1500);
+            });
+        }
+
+        function toggleUsernameEdit() {
+            const editForm = document.getElementById('usernameEditForm');
+            const input = document.getElementById('newUsernameInput');
+            const errorDiv = document.getElementById('usernameEditError');
+
+            if (editForm.style.display === 'none') {
+                editForm.style.display = 'block';
+                input.value = currentProfile.username;
+                errorDiv.classList.add('hidden');
+                setTimeout(() => input.focus(), 100);
+
+                // Добавляем валидацию при вводе
+                input.oninput = (e) => {
+                    let value = e.target.value.toLowerCase().replace('@', '');
+                    // Удаляем недопустимые символы
+                    value = value.replace(/[^a-z0-9_]/g, '');
+                    // Ограничиваем длину
+                    if (value.length > 32) {
+                        value = value.slice(0, 32);
+                    }
+                    e.target.value = value;
+                };
+
+                // Enter для сохранения, Escape для отмены
+                input.onkeydown = (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        saveNewUsername();
+                    } else if (e.key === 'Escape') {
+                        cancelUsernameEdit();
+                    }
+                };
+            } else {
+                editForm.style.display = 'none';
+            }
+        }
+
+        function cancelUsernameEdit() {
+            const editForm = document.getElementById('usernameEditForm');
+            const errorDiv = document.getElementById('usernameEditError');
+            editForm.style.display = 'none';
+            errorDiv.classList.add('hidden');
+        }
+
+        async function saveNewUsername() {
+            const input = document.getElementById('newUsernameInput');
+            const errorDiv = document.getElementById('usernameEditError');
+            const username = input.value.toLowerCase().replace('@', '').trim();
+
+            // Проверка формата
+            if (!/^[a-z0-9_]{5,32}$/.test(username)) {
+                errorDiv.textContent = 'Неверный формат: 5-32 символа, только a-z, 0-9, _';
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+
+            // Проверка, что username изменился
+            if (username === currentProfile.username) {
+                errorDiv.textContent = 'Это ваш текущий username';
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+
+            // Проверка уникальности
+            const { data: existing } = await supabase
+                .from('profiles')
+                .select('username')
+                .eq('username', username)
+                .single();
+
+            if (existing) {
+                errorDiv.textContent = 'Это имя пользователя уже занято';
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+
+            // Сохранение
+            const { error } = await supabase
+                .from('profiles')
+                .update({ username })
+                .eq('id', currentUser.id);
+
+            if (error) {
+                errorDiv.textContent = 'Ошибка: ' + error.message;
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+
+            // Обновление интерфейса
+            currentProfile.username = username;
+            document.getElementById('currentUsername').textContent = '@' + username;
+            errorDiv.classList.add('hidden');
+            cancelUsernameEdit();
+
+            // Показываем уведомление об успехе
+            const displayDiv = document.getElementById('usernameDisplay');
+            const originalHtml = displayDiv.innerHTML;
+            displayDiv.innerHTML = '<span style="color: var(--success); font-weight: 600;">✓ Username обновлён!</span>';
+            displayDiv.style.cursor = 'default';
+            displayDiv.onclick = null;
+            setTimeout(() => {
+                displayDiv.innerHTML = originalHtml;
+                displayDiv.style.cursor = 'pointer';
+                displayDiv.onclick = copyUsername;
+            }, 2000);
         }
 
         // ============================================
