@@ -2,20 +2,21 @@
   "name": "Pulse",
   "short_name": "Pulse",
   "description": "Современный мессенджер для общения",
-  "start_url": "/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "icon.svg",
+      "src": "./icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
     },
     {
-      "src": "icon.svg",
+      "src": "./icon.svg",
       "sizes": "512x512",
       "type": "image/svg+xml"
     }
@@ -23,7 +24,7 @@
   "screenshots": [],
   "categories": ["social", "communication"],
   "share_target": {
-    "action": "/",
+    "action": "./",
     "method": "GET",
     "enctype": "application/x-www-form-urlencoded",
     "params": {

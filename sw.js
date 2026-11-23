@@ -1,8 +1,8 @@
 const CACHE_NAME = 'pulse-v1';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/icon.svg'
+  './',
+  './index.html',
+  './icon.svg'
 ];
 
 // Установка Service Worker
@@ -71,7 +71,7 @@ self.addEventListener('fetch', event => {
       })
       .catch(() => {
         // Возвращаем офлайн-страницу, если есть
-        return caches.match('/index.html');
+        return caches.match('./index.html');
       })
   );
 });
