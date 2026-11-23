@@ -313,12 +313,17 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            cursor: pointer;
-            transition: background 0.2s;
         }
 
-        .chat-header:hover {
-            background: var(--bg-hover);
+        .chat-header .avatar,
+        .chat-header .chat-info {
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .chat-header .avatar:hover,
+        .chat-header .chat-info:hover {
+            opacity: 0.8;
         }
 
         .messages-container {
@@ -806,6 +811,24 @@
             color: var(--text-secondary);
         }
 
+        /* Back button for mobile */
+        .back-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 4px 8px;
+            margin-right: 8px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        .back-btn:hover {
+            background: var(--bg-hover);
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .app {
@@ -813,16 +836,29 @@
             }
 
             .sidebar {
-                display: none;
+                display: flex;
+                width: 100%;
             }
 
-            .sidebar.mobile-visible {
-                display: flex;
+            .chat-area {
+                display: none;
                 position: fixed;
                 left: 0;
                 top: 0;
                 width: 100%;
                 z-index: 100;
+            }
+
+            .chat-area.mobile-active {
+                display: flex;
+            }
+
+            .sidebar.mobile-hidden {
+                display: none;
+            }
+
+            .back-btn {
+                display: block;
             }
 
             .message {
@@ -1280,11 +1316,12 @@
 
             const chatArea = document.getElementById('chatArea');
             chatArea.innerHTML = `
-                <div class="chat-header" onclick="showUserProfile('${user.id}')">
-                    <div class="avatar" style="background: ${getColorForUser(user.username)}">
+                <div class="chat-header">
+                    <button class="back-btn" id="backBtn">←</button>
+                    <div class="avatar" style="background: ${getColorForUser(user.username)}" onclick="showUserProfile('${user.id}')">
                         ${user.avatar_url ? `<img src="${user.avatar_url}">` : getInitials(user.display_name || user.username)}
                     </div>
-                    <div class="chat-info">
+                    <div class="chat-info" onclick="showUserProfile('${user.id}')">
                         <div class="chat-name">${user.display_name || user.username}</div>
                         <div class="chat-username">@${user.username}</div>
                     </div>
@@ -1299,9 +1336,32 @@
                 <input type="file" id="fileInput" accept="image/*,video/*" style="display: none;">
             `;
 
+            // Mobile view toggle
+            chatArea.classList.add('mobile-active');
+            document.querySelector('.sidebar').classList.add('mobile-hidden');
+
+            // Back button handler
+            document.getElementById('backBtn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                closeMobileChat();
+            });
+
             setupChatEventListeners();
             await loadMessages();
             subscribeToMessages();
+        }
+
+        function closeMobileChat() {
+            const chatArea = document.getElementById('chatArea');
+            const sidebar = document.querySelector('.sidebar');
+
+            chatArea.classList.remove('mobile-active');
+            sidebar.classList.remove('mobile-hidden');
+
+            currentChat = null;
+            if (messagesSubscription) {
+                messagesSubscription.unsubscribe();
+            }
         }
 
         async function loadMessages() {
